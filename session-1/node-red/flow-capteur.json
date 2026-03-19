@@ -1,0 +1,121 @@
+[
+    {
+        "id": "flow-capteur-tab",
+        "type": "tab",
+        "label": "Capteur Temperature",
+        "disabled": false,
+        "info": "Flow de démonstration : capteur de température avec RabbitMQ"
+    },
+    {
+        "id": "inject-node",
+        "type": "inject",
+        "z": "flow-capteur-tab",
+        "name": "Toutes les 5s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            ["function-temperature"]
+        ]
+    },
+    {
+        "id": "function-temperature",
+        "type": "function",
+        "z": "flow-capteur-tab",
+        "name": "Generer temperature",
+        "func": "// Génération d'une température aléatoire entre 15 et 35°C\nvar temperature = Math.round((Math.random() * 20 + 15) * 10) / 10;\n\n// Construction du message JSON\nmsg.payload = {\n    sensor: \"temperature\",\n    value: temperature,\n    room: \"salon\",\n    timestamp: new Date().toISOString()\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 100,
+        "wires": [
+            ["amqp-out-node"]
+        ]
+    },
+    {
+        "id": "amqp-out-node",
+        "type": "amqp-out",
+        "z": "flow-capteur-tab",
+        "name": "Publier sur capteurs",
+        "topic": "capteurs",
+        "ioDurable": true,
+        "ioExclusive": false,
+        "ioAutoDelete": false,
+        "ioRoutingKey": "",
+        "ioContentEncoding": "utf-8",
+        "ioContentType": "application/json",
+        "ioHeaders": "",
+        "amqpProperties": "",
+        "outputs": 0,
+        "broker": "rabbitmq-server",
+        "x": 590,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "amqp-in-node",
+        "type": "amqp-in",
+        "z": "flow-capteur-tab",
+        "name": "Ecouter capteurs",
+        "topic": "capteurs",
+        "ioDurable": true,
+        "ioExclusive": false,
+        "ioAutoDelete": false,
+        "ioRoutingKey": "",
+        "prefetch": 0,
+        "noAck": true,
+        "broker": "rabbitmq-server",
+        "x": 150,
+        "y": 250,
+        "wires": [
+            ["debug-node"]
+        ]
+    },
+    {
+        "id": "debug-node",
+        "type": "debug",
+        "z": "flow-capteur-tab",
+        "name": "Afficher message",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.value",
+        "statusType": "auto",
+        "x": 380,
+        "y": 250,
+        "wires": []
+    },
+    {
+        "id": "rabbitmq-server",
+        "type": "amqp-broker",
+        "name": "RabbitMQ Local",
+        "host": "localhost",
+        "port": "5672",
+        "tls": false,
+        "credsFromSettings": false,
+        "vhost": "/",
+        "keepAlive": true,
+        "usePersistentDeliveryMode": false,
+        "useConfirms": false,
+        "maxRetries": 0,
+        "retryInterval": 3000
+    }
+]
