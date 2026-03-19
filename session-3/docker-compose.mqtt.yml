@@ -1,0 +1,11 @@
+# Utilisation : docker compose -f docker-compose.yml -f session-3/docker-compose.mqtt.yml up -d
+#
+# Ce fichier ajoute le plugin MQTT a RabbitMQ et expose le port 1883.
+# Il doit etre utilise en complement du docker-compose.yml principal.
+
+services:
+  rabbitmq:
+    environment:
+      RABBITMQ_PLUGINS: "rabbitmq_management rabbitmq_mqtt"
+    ports:
+      - "1883:1883"
