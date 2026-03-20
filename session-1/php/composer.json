@@ -1,0 +1,7 @@
+{
+  "name": "formation/session-1",
+  "description": "Session 1 - Premier producer/consumer RabbitMQ",
+  "require": {
+    "php-amqplib/php-amqplib": "^3.6"
+  }
+}
