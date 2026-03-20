@@ -5,3 +5,7 @@ __pycache__/
 data/
 .node-red/
 notes-formateur/
+vendor/
+pdf/
+docs/superpowers/
+.idea/
