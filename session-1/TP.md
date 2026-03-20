@@ -7,6 +7,12 @@
 
 ## Exercice 1 — Installation et prise en main (30 min)
 
+### 1.0 Télécharger le repo
+
+```bash
+git clone https://github.com/mnicole90/formation-rabbitmq.git
+```
+
 ### 1.1 Lancer RabbitMQ avec Docker Compose
 
 Depuis la racine du projet, lancez RabbitMQ en arrière-plan :
