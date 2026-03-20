@@ -13,7 +13,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 // Connexion au serveur RabbitMQ
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+$host = getenv('RABBITMQ_HOST') ?: 'rabbitmq';
+$port = (int) (getenv('RABBITMQ_PORT') ?: 5672);
+$connection = new AMQPStreamConnection($host, $port, 'guest', 'guest');
 $channel = $connection->channel();
 
 // Declaration du Topic Exchange "domotique"
