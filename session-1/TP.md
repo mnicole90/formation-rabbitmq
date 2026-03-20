@@ -1,7 +1,7 @@
 # TP Session 1 — Premiers pas avec RabbitMQ
 
 > **Durée estimée : 1h30**
-> **Pré-requis : Docker et Docker Compose installés**
+> **Pré-requis : Docker et Docker Compose installés, Git installé**
 
 ---
 
@@ -28,13 +28,21 @@ Vérifiez que le conteneur est bien démarré :
 docker compose ps
 ```
 
-Vous devriez voir un conteneur `rabbitmq` avec les ports `5672` et `15672` exposés.
+Vous devriez voir deux conteneurs : `rabbitmq` et `php-rabbitmq`.
 
-### 1.2 Ouvrir l'interface de management
+### 1.2 Installer les dépendances PHP
+
+Le conteneur `php-rabbitmq` contient PHP et Composer. Installez les dépendances de la Session 1 :
+
+```bash
+docker compose exec php composer install -d /app/session-1/php
+```
+
+### 1.3 Ouvrir l'interface de management
 
 Ouvrez votre navigateur et accédez à l'interface de management RabbitMQ :
 
-**URL :** [http://localhost:15672](http://localhost:15672)
+**URL :** [http://localhost:15673](http://localhost:15673)
 
 **Identifiants par défaut :**
 - Utilisateur : `guest`
@@ -42,7 +50,7 @@ Ouvrez votre navigateur et accédez à l'interface de management RabbitMQ :
 
 Vous arrivez sur le tableau de bord principal (Overview). Cette page affiche un résumé de l'état du serveur : nombre de connexions, de channels, de queues, et le débit de messages.
 
-### 1.3 Créer une queue de test
+### 1.4 Créer une queue de test
 
 1. Cliquez sur l'onglet **Queues and Streams** dans le menu supérieur
 2. Vous voyez la liste des queues existantes (vide pour le moment)
@@ -54,7 +62,7 @@ Vous arrivez sur le tableau de bord principal (Overview). Cette page affiche un 
 4. Cliquez sur **Add queue**
 5. La queue `test` apparaît maintenant dans la liste
 
-### 1.4 Observer les exchanges par défaut
+### 1.5 Observer les exchanges par défaut
 
 1. Cliquez sur l'onglet **Exchanges** dans le menu supérieur
 2. Vous voyez la liste des exchanges créés automatiquement par RabbitMQ :
@@ -68,7 +76,7 @@ Vous arrivez sur le tableau de bord principal (Overview). Cette page affiche un 
 
 > **Note :** Nous étudierons les différents types d'exchanges en détail dans la Session 2.
 
-### 1.5 Publier un message manuellement
+### 1.6 Publier un message manuellement
 
 1. Retournez dans l'onglet **Queues and Streams**
 2. Cliquez sur le nom de la queue `test`
@@ -84,7 +92,7 @@ Vous arrivez sur le tableau de bord principal (Overview). Cette page affiche un 
 7. Un bandeau vert confirme : *Message published.*
 8. En haut de la page, vous voyez que le compteur **Ready** passe à `1`
 
-### 1.6 Récupérer le message
+### 1.7 Récupérer le message
 
 1. Toujours sur la page de détail de la queue `test`
 2. Dépliez la section **Get messages**
@@ -114,21 +122,14 @@ Le message JSON envoyé a cette forme :
 }
 ```
 
-### 2.1 Installer les dépendances
+### 2.1 Lancer le consumer et le producer
 
-```bash
-cd session-1/php
-composer install
-```
-
-### 2.2 Lancer le consumer et le producer
-
-Ouvrez **deux terminaux** :
+Ouvrez **deux terminaux** et utilisez le conteneur PHP Docker :
 
 **Terminal 1 — Lancer le consumer :**
 
 ```bash
-php consumer.php
+docker compose exec php php /app/session-1/php/consumer.php
 ```
 
 Vous devez voir s'afficher : `[*] En attente de messages. CTRL+C pour quitter`
@@ -136,7 +137,7 @@ Vous devez voir s'afficher : `[*] En attente de messages. CTRL+C pour quitter`
 **Terminal 2 — Lancer le producer :**
 
 ```bash
-php producer.php
+docker compose exec php php /app/session-1/php/producer.php
 ```
 
 Le producer envoie un message toutes les 5 secondes. Dans le terminal du consumer, vous verrez apparaître les messages reçus :
@@ -153,7 +154,7 @@ Le producer envoie un message toutes les 5 secondes. Dans le terminal du consume
 
 Pendant que le producer et le consumer tournent :
 
-1. Ouvrez [http://localhost:15672](http://localhost:15672)
+1. Ouvrez [http://localhost:15673](http://localhost:15673)
 2. Allez dans l'onglet **Queues and Streams**
 3. Vous devez voir la queue `capteurs` avec :
    - Un débit de messages entrants (Publish) et sortants (Deliver/Get)

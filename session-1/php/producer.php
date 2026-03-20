@@ -15,7 +15,10 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 // Connexion au serveur RabbitMQ
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+// Le host est "rabbitmq" dans Docker, "localhost" en local
+$host = getenv('RABBITMQ_HOST') ?: 'rabbitmq';
+$port = (int) (getenv('RABBITMQ_PORT') ?: 5672);
+$connection = new AMQPStreamConnection($host, $port, 'guest', 'guest');
 $channel = $connection->channel();
 
 // Déclaration de la queue "capteurs"
