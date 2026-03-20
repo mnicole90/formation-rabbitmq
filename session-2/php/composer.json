@@ -1,0 +1,7 @@
+{
+  "name": "formation/session-2",
+  "description": "Session 2 - Topic Exchange et routing",
+  "require": {
+    "php-amqplib/php-amqplib": "^3.6"
+  }
+}
