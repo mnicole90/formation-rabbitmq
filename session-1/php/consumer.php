@@ -54,6 +54,8 @@ $callback = function ($msg) {
     } else {
         echo " [$room] $sensor: $value\n";
     }
+
+    sleep(1);
 };
 
 // Consommation des messages avec auto-acknowledge (auto_ack=true)

@@ -34,7 +34,7 @@ register_shutdown_function(function () use ($channel, $connection) {
     echo "\n [x] Connexion fermée proprement\n";
 });
 
-// Boucle infinie : envoi d'un message toutes les 5 secondes
+// Boucle infinie : envoi d'un message toutes les x secondes
 while (true) {
     // Génération d'une température aléatoire entre 15.0 et 35.0°C
     $temperature = round(mt_rand(150, 350) / 10, 1);
@@ -55,5 +55,5 @@ while (true) {
     echo " [x] Envoyé: $json\n";
 
     // Attente de 5 secondes avant le prochain envoi
-    sleep(5);
+    sleep(2);
 }
