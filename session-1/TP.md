@@ -18,6 +18,7 @@ git clone https://github.com/mnicole90/formation-rabbitmq.git
 Depuis la racine du projet, lancez RabbitMQ en arrière-plan :
 
 ```bash
+cd /Path_du_projet/formation-rabbitmq
 docker compose up -d
 ```
 
