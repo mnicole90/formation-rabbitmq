@@ -5,6 +5,7 @@
 - Avoir fait la Session 1 (producer/consumer avec queue par defaut)
 - Docker et RabbitMQ lances (`docker compose up -d`)
 - Acces au Management UI : [http://localhost:15672](http://localhost:15672) (guest / guest)
+- PHP 8.1+ et Composer installes
 
 ---
 
@@ -26,7 +27,7 @@ Maintenant, on va **router les messages intelligemment** avec un **Topic Exchang
    - Laisser les autres options par defaut
 4. Cliquer sur **Add exchange**
 
-> **Note** : le code Python et Node.js declare aussi l'exchange automatiquement. Mais c'est bien de le voir dans l'interface pour comprendre ce qu'on fait.
+> **Note** : le code PHP declare aussi l'exchange automatiquement. Mais c'est bien de le voir dans l'interface pour comprendre ce qu'on fait.
 
 ### Etape 2 : Le Producer (simulateur de capteurs)
 
@@ -40,18 +41,12 @@ Le producer simule **3 capteurs** qui publient des messages avec des routing key
 
 Chaque message est envoye en JSON avec le nom du capteur, la valeur, la piece et un timestamp.
 
-**Lancer le producer :**
+**Installer les dependances et lancer le producer :**
 
 ```bash
-# Python
-cd session-2/python
-pip install -r requirements.txt
-python producer_topic.py
-
-# OU Node.js
-cd session-2/nodejs
-npm install
-node producer_topic.js
+cd session-2/php
+composer install
+php producer_topic.php
 ```
 
 ### Etape 3 : Les 3 Consumers
@@ -74,19 +69,19 @@ On va creer **3 consumers** qui s'abonnent chacun a des messages differents grac
 
 ```bash
 # Terminal 1 - Alertes
-python consumer_alertes.py
+php consumer_alertes.php
 
 # Terminal 2 - Monitoring
-python consumer_monitoring.py
+php consumer_monitoring.php
 
 # Terminal 3 - Salon
-python consumer_salon.py
+php consumer_salon.php
 ```
 
 2. Ouvrir un **4eme terminal** et lancer le producer :
 
 ```bash
-python producer_topic.py
+php producer_topic.php
 ```
 
 3. Observer qui recoit quoi !
@@ -143,28 +138,18 @@ Cliquer sur le nom de chaque utilisateur pour configurer ses permissions sur le 
 
 1. **Modifier le producer** pour utiliser `capteur-user` au lieu de `guest` :
 
-```python
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(
-        'localhost',
-        credentials=pika.PlainCredentials('capteur-user', 'capteur123')
-    )
-)
+```php
+$connection = new AMQPStreamConnection('localhost', 5672, 'capteur-user', 'capteur123');
 ```
 
 2. Lancer le producer → ca marche, il peut publier !
 
 3. **Tester l'interdit** : essayer de consommer avec `capteur-user` :
 
-```python
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(
-        'localhost',
-        credentials=pika.PlainCredentials('capteur-user', 'capteur123')
-    )
-)
-channel = connection.channel()
-channel.basic_consume(queue='ma-queue', on_message_callback=callback)
+```php
+$connection = new AMQPStreamConnection('localhost', 5672, 'capteur-user', 'capteur123');
+$channel = $connection->channel();
+$channel->basic_consume($queue_name, '', false, true, false, false, $callback);
 ```
 
 4. Resultat attendu : **ACCESS_REFUSED** ! C'est normal, `capteur-user` n'a pas le droit de lire.
@@ -173,32 +158,27 @@ channel.basic_consume(queue='ma-queue', on_message_callback=callback)
 
 ### Partie B : Acquittement manuel (Manual Ack)
 
-Jusqu'ici, on utilisait `auto_ack=True` : le message est supprime de la queue des qu'il est envoye au consumer. Mais que se passe-t-il si le consumer plante avant de traiter le message ? Le message est perdu !
+Jusqu'ici, on utilisait `auto_ack=true` : le message est supprime de la queue des qu'il est envoye au consumer. Mais que se passe-t-il si le consumer plante avant de traiter le message ? Le message est perdu !
 
 #### Etape 1 : Passer en manual ack
 
-Modifier un consumer (par exemple `consumer_monitoring.py`) :
+Modifier un consumer (par exemple `consumer_monitoring.php`) :
 
-```python
-# AVANT (auto_ack)
-channel.basic_consume(
-    queue=queue_name,
-    on_message_callback=callback,
-    auto_ack=True
-)
+```php
+// AVANT (auto_ack)
+$channel->basic_consume($queue_name, '', false, true, false, false, $callback);
 
-# APRES (manual ack)
-def callback(ch, method, properties, body):
-    message = json.loads(body)
-    print(f"[{method.routing_key}] {message}")
-    # On acquitte manuellement APRES le traitement
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+// APRES (manual ack) : on passe no_ack a false
+$callback = function ($msg) {
+    $data = json_decode($msg->getBody(), true);
+    $routingKey = $msg->getRoutingKey();
+    echo "[$routingKey] " . json_encode($data) . "\n";
 
-channel.basic_consume(
-    queue=queue_name,
-    on_message_callback=callback,
-    auto_ack=False  # <-- important !
-)
+    // On acquitte manuellement APRES le traitement
+    $msg->ack();
+};
+
+$channel->basic_consume($queue_name, '', false, false, false, false, $callback); // no_ack=false
 ```
 
 #### Etape 2 : Test de fiabilite
@@ -209,7 +189,7 @@ channel.basic_consume(
 4. Relancer le consumer
 5. **Le message revient !** RabbitMQ l'a remis dans la queue parce qu'il n'a pas ete acquitte.
 
-> **A retenir** : avec `auto_ack=False`, RabbitMQ attend la confirmation du consumer. Si le consumer plante, le message est redistribue a un autre consumer (ou au meme quand il redemarrera).
+> **A retenir** : avec `no_ack=false`, RabbitMQ attend la confirmation du consumer. Si le consumer plante, le message est redistribue a un autre consumer (ou au meme quand il redemarrera).
 
 ### Partie C : Bonus — Dead Letter Queue (DLQ)
 
@@ -231,23 +211,25 @@ Une Dead Letter Queue recoit les messages qui ont ete **rejetes** ou qui ont **e
 
 #### Etape 3 : Rejeter un message
 
-```python
-def callback(ch, method, properties, body):
-    message = json.loads(body)
-    niveau = message.get('value', 0)
+```php
+$callback = function ($msg) {
+    $data = json_decode($msg->getBody(), true);
+    $niveau = $data['value'] ?? 0;
 
-    if niveau > 80:
-        print(f"[CRITIQUE] Niveau trop eleve : {niveau} — rejet vers DLQ")
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-    else:
-        print(f"[OK] Niveau normal : {niveau}")
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+    if ($niveau > 80) {
+        echo "[CRITIQUE] Niveau trop eleve : $niveau — rejet vers DLQ\n";
+        $msg->nack(false); // requeue=false → envoye vers la DLQ
+    } else {
+        echo "[OK] Niveau normal : $niveau\n";
+        $msg->ack();
+    }
+};
 ```
 
 #### Etape 4 : Verifier
 
 1. Envoyer un message avec un niveau de fumee > 80
-2. Le consumer le rejette avec `basic_nack(requeue=False)`
+2. Le consumer le rejette avec `nack(false)`
 3. Aller dans le Management UI → onglet **Queues** → `dead-letters`
 4. Le message rejete est la !
 
