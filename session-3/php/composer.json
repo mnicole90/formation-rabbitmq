@@ -1,0 +1,8 @@
+{
+  "name": "formation/session-3",
+  "description": "Session 3 - Architecture microservices IoT",
+  "require": {
+    "php-amqplib/php-amqplib": "^3.6",
+    "php-mqtt/client": "^2.0"
+  }
+}

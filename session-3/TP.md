@@ -30,21 +30,15 @@ Ouvrez **http://localhost:15672** (identifiants : `guest` / `guest`).
 
 Dans l'onglet **Overview**, verifiez que le protocole MQTT apparait dans la section **Ports and contexts** ou **Protocols**. Vous devriez voir le port `1883` pour MQTT.
 
-### Etape 4 : Installer un client MQTT
+### Etape 4 : Installer les dependances PHP
 
-Choisissez selon votre langage :
-
-**Python :**
 ```bash
-cd session-3/python
-pip install -r requirements.txt
+cd session-3/php && composer install
 ```
 
-**Node.js :**
-```bash
-cd session-3/nodejs
-npm install
-```
+Cela installe les librairies :
+- `php-amqplib/php-amqplib` — client AMQP pour communiquer avec RabbitMQ
+- `php-mqtt/client` — client MQTT pour publier sur le broker
 
 **Ou avec mosquitto (outil en ligne de commande) :**
 ```bash
@@ -57,24 +51,13 @@ apt install mosquitto-clients
 
 ### Etape 5 : Tester la passerelle MQTT -> AMQP
 
-Publiez un message MQTT :
+Publiez un message MQTT avec mosquitto :
 
 ```bash
-mosquitto_pub -h localhost -t "maison/salon/temperature" -m '{"value": 22.5}'
+mosquitto_pub -h localhost -t "maison/salon/temperature" -m '{"sensor":"temperature","value":22.5,"room":"salon"}'
 ```
 
-Ou avec un script rapide en Python :
-
-```python
-import paho.mqtt.client as mqtt
-import json
-
-client = mqtt.Client()
-client.username_pw_set("guest", "guest")
-client.connect("localhost", 1883)
-client.publish("maison/salon/temperature", json.dumps({"value": 22.5}))
-client.disconnect()
-```
+Ou lancez directement le service capteurs PHP (voir Exercice 2).
 
 Maintenant, observez dans le **Management UI** :
 
@@ -109,7 +92,7 @@ Construire un pipeline de **3 services** qui communiquent uniquement via RabbitM
                                                        +----------------+
 ```
 
-### Service Capteurs (`service_capteurs`)
+### Service Capteurs (`service_capteurs.php`)
 
 - Publie en **MQTT** des donnees de 4 types de capteurs
 - Topics MQTT : `maison/{piece}/{type}`
@@ -123,7 +106,7 @@ Construire un pipeline de **3 services** qui communiquent uniquement via RabbitM
 - Publie toutes les **2 a 3 secondes** (aleatoire)
 - Parfois envoie des **valeurs aberrantes** (temperature = 999, fumee > 95) pour tester la validation
 
-### Service Validation (`service_validation`)
+### Service Validation (`service_validation.php`)
 
 - Consomme en **AMQP** depuis l'exchange `amq.topic` avec le binding `maison.#`
 - Verifie la coherence des donnees :
@@ -134,10 +117,10 @@ Construire un pipeline de **3 services** qui communiquent uniquement via RabbitM
   | Fumee | 0 a 100 |
   | Mouvement | true ou false |
 - **Si valide** : republier sur un exchange `validated` (type topic) avec la meme routing key
-- **Si invalide** : afficher un log d'erreur et rejeter le message (`basic_nack`, `requeue=False`)
+- **Si invalide** : afficher un log d'erreur et rejeter le message (`basic_nack`, `requeue=false`)
 - Utilise le **manual ack** (pas d'auto-ack)
 
-### Service Alertes (`service_alertes`)
+### Service Alertes (`service_alertes.php`)
 
 - Consomme depuis l'exchange `validated` avec le binding `maison.#`
 - Detecte les **seuils critiques** :
@@ -159,34 +142,24 @@ Construire un pipeline de **3 services** qui communiquent uniquement via RabbitM
 
 ### Instructions
 
-Choisissez votre langage (**Python**, **Node.js** ou **Node-RED**) puis lancez chaque service dans un **terminal separe** :
+Lancez chaque service dans un **terminal separe** :
 
-**Python :**
 ```bash
-# Terminal 1
-python session-3/python/service_capteurs.py
+# Terminal 1 — Service Capteurs (MQTT)
+php session-3/php/service_capteurs.php
 
-# Terminal 2
-python session-3/python/service_validation.py
+# Terminal 2 — Service Validation (AMQP)
+php session-3/php/service_validation.php
 
-# Terminal 3
-python session-3/python/service_alertes.py
+# Terminal 3 — Service Alertes (AMQP)
+php session-3/php/service_alertes.php
 ```
 
-**Node.js :**
+Vous pouvez aussi tester l'envoi MQTT manuellement avec mosquitto :
+
 ```bash
-# Terminal 1
-node session-3/nodejs/service_capteurs.js
-
-# Terminal 2
-node session-3/nodejs/service_validation.js
-
-# Terminal 3
-node session-3/nodejs/service_alertes.js
+mosquitto_pub -h localhost -t "maison/salon/temperature" -m '{"sensor":"temperature","value":22.5,"room":"salon"}'
 ```
-
-**Node-RED :**
-Importez le flow depuis `session-3/node-red/flow-microservices.json` (voir `session-3/node-red/README.md` pour les instructions).
 
 ---
 
@@ -251,7 +224,7 @@ Ajoutez un **4eme service** a l'architecture :
 
 ### Consignes
 
-1. Creez un service `service_stockage` qui :
+1. Creez un service `service_stockage.php` qui :
    - Se connecte en AMQP a RabbitMQ
    - Consomme depuis l'exchange `validated` avec le binding `maison.#`
    - Ecrit chaque message recu dans un fichier `data/messages.json` (une ligne JSON par message, en mode append)
@@ -261,16 +234,28 @@ Ajoutez un **4eme service** a l'architecture :
 
 3. Lancez le service dans un 4eme terminal et verifiez que les messages arrivent dans le fichier
 
+**Indice PHP pour ecrire dans un fichier :**
+
+```php
+// Créer le dossier data/ s'il n'existe pas
+if (!is_dir('data')) {
+    mkdir('data', 0755, true);
+}
+
+// Écrire dans un fichier JSON (une ligne par message, mode append)
+file_put_contents('data/messages.json', json_encode($data) . "\n", FILE_APPEND);
+```
+
 ### Bonus : Round-Robin
 
 Lancez **2 instances** du service Alertes dans 2 terminaux differents :
 
 ```bash
 # Terminal A
-python session-3/python/service_alertes.py
+php session-3/php/service_alertes.php
 
 # Terminal B
-python session-3/python/service_alertes.py
+php session-3/php/service_alertes.php
 ```
 
 Observez : chaque instance recoit environ la **moitie des messages**. C'est le **round-robin natif** de RabbitMQ. Quand plusieurs consommateurs ecoutent la meme queue, RabbitMQ distribue les messages de maniere equilibree entre eux.
