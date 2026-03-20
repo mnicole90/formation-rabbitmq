@@ -107,71 +107,42 @@ Le message JSON envoyé a cette forme :
 }
 ```
 
-Choisissez le langage de votre choix parmi les trois proposés :
-
-### Option A — Python
+### 2.1 Installer les dépendances
 
 ```bash
-cd session-1/python
-pip install -r requirements.txt
+cd session-1/php
+composer install
 ```
+
+### 2.2 Lancer le consumer et le producer
 
 Ouvrez **deux terminaux** :
 
 **Terminal 1 — Lancer le consumer :**
 
 ```bash
-python consumer.py
+php consumer.php
 ```
 
-Vous devez voir s'afficher : `[*] En attente de messages. Ctrl+C pour quitter`
+Vous devez voir s'afficher : `[*] En attente de messages. CTRL+C pour quitter`
 
 **Terminal 2 — Lancer le producer :**
 
 ```bash
-python producer.py
+php producer.php
 ```
 
 Le producer envoie un message toutes les 5 secondes. Dans le terminal du consumer, vous verrez apparaître les messages reçus :
 
 ```
-[salon] Temperature: 22.5°C
-[salon] Temperature: 28.3°C
+[salon] Température: 22.5°C
+[salon] Température: 28.3°C
 ...
 ```
 
-> **Fichiers :** voir `session-1/python/producer.py` et `session-1/python/consumer.py`
+> **Fichiers :** voir `session-1/php/producer.php` et `session-1/php/consumer.php`
 
-### Option B — Node.js
-
-```bash
-cd session-1/nodejs
-npm install
-```
-
-Ouvrez **deux terminaux** :
-
-**Terminal 1 — Lancer le consumer :**
-
-```bash
-node consumer.js
-```
-
-**Terminal 2 — Lancer le producer :**
-
-```bash
-node producer.js
-```
-
-> **Fichiers :** voir `session-1/nodejs/producer.js` et `session-1/nodejs/consumer.js`
-
-### Option C — Node-RED
-
-Node-RED propose une approche visuelle (low-code) pour créer des flux de messages.
-
-> **Instructions complètes :** voir `session-1/node-red/README.md`
-
-### Vérification dans l'interface de management
+### 2.3 Vérification dans l'interface de management
 
 Pendant que le producer et le consumer tournent :
 
