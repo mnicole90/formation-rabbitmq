@@ -5,7 +5,6 @@
 - Avoir fait la Session 1 (producer/consumer avec queue par defaut)
 - Docker et RabbitMQ lances (`docker compose up -d`)
 - Acces au Management UI : [http://localhost:15672](http://localhost:15672) (guest / guest)
-- PHP 8.1+ et Composer installes
 
 ---
 
@@ -41,12 +40,10 @@ Le producer simule **3 capteurs** qui publient des messages avec des routing key
 
 Chaque message est envoye en JSON avec le nom du capteur, la valeur, la piece et un timestamp.
 
-**Installer les dependances et lancer le producer :**
+**Lancer le producer :**
 
 ```bash
-cd session-2/php
-composer install
-php producer_topic.php
+docker compose exec php php /app/session-2/php/producer_topic.php
 ```
 
 ### Etape 3 : Les 3 Consumers
@@ -68,20 +65,20 @@ On va creer **3 consumers** qui s'abonnent chacun a des messages differents grac
 1. Ouvrir **3 terminaux** et lancer chaque consumer :
 
 ```bash
-# Terminal 1 - Alertes
-php consumer_alertes.php
+# Terminal 1 - Alertes (manual ack)
+docker compose exec php php /app/session-2/php/consumer_alertes.php
 
-# Terminal 2 - Monitoring
-php consumer_monitoring.php
+# Terminal 2 - Monitoring (manual ack)
+docker compose exec php php /app/session-2/php/consumer_monitoring.php
 
-# Terminal 3 - Salon
-php consumer_salon.php
+# Terminal 3 - Salon (auto ack)
+docker compose exec php php /app/session-2/php/consumer_salon.php
 ```
 
 2. Ouvrir un **4eme terminal** et lancer le producer :
 
 ```bash
-php producer_topic.php
+docker compose exec php php /app/session-2/php/producer_topic.php
 ```
 
 3. Observer qui recoit quoi !
@@ -156,40 +153,97 @@ $channel->basic_consume($queue_name, '', false, true, false, false, $callback);
 
 > **Conclusion** : les permissions RabbitMQ permettent de limiter ce que chaque application peut faire. Un capteur ne devrait pas pouvoir lire les messages, et un dashboard ne devrait pas pouvoir en envoyer.
 
-### Partie B : Acquittement manuel (Manual Ack)
+### Partie B : Auto Ack vs Manual Ack — Comparaison en direct
 
-Jusqu'ici, on utilisait `auto_ack=true` : le message est supprime de la queue des qu'il est envoye au consumer. Mais que se passe-t-il si le consumer plante avant de traiter le message ? Le message est perdu !
+Nos consumers de l'exercice 1 sont deja configures differemment pour illustrer les deux modes :
 
-#### Etape 1 : Passer en manual ack
+| Consumer | Mode | Fichier |
+|----------|------|---------|
+| **consumer_salon.php** | `auto_ack=true` | Le message est supprime de la queue **des qu'il est envoye** au consumer |
+| **consumer_alertes.php** | `manual ack` | Le message reste dans la queue **tant que le consumer n'a pas appele `$msg->ack()`** |
 
-Modifier un consumer (par exemple `consumer_monitoring.php`) :
+Les deux consumers ont un `sleep(3)` qui simule un traitement long. C'est pendant ces 3 secondes que vous allez tuer le consumer pour voir la difference.
 
-```php
-// AVANT (auto_ack)
-$channel->basic_consume($queue_name, '', false, true, false, false, $callback);
+#### Experience 1 : auto_ack — le message est PERDU
 
-// APRES (manual ack) : on passe no_ack a false
-$callback = function ($msg) {
-    $data = json_decode($msg->getBody(), true);
-    $routingKey = $msg->getRoutingKey();
-    echo "[$routingKey] " . json_encode($data) . "\n";
+1. Lancer le consumer salon :
 
-    // On acquitte manuellement APRES le traitement
-    $msg->ack();
-};
-
-$channel->basic_consume($queue_name, '', false, false, false, false, $callback); // no_ack=false
+```bash
+docker compose exec php php /app/session-2/php/consumer_salon.php
 ```
 
-#### Etape 2 : Test de fiabilite
+2. Dans un autre terminal, envoyer un message :
 
-1. Lancer le consumer modifie
-2. Envoyer un message avec le producer
-3. **Tuer le consumer** avec Ctrl+C **AVANT** qu'il ait le temps d'ack
-4. Relancer le consumer
-5. **Le message revient !** RabbitMQ l'a remis dans la queue parce qu'il n'a pas ete acquitte.
+```bash
+docker compose exec php php /app/session-2/php/producer_topic.php
+```
 
-> **A retenir** : avec `no_ack=false`, RabbitMQ attend la confirmation du consumer. Si le consumer plante, le message est redistribue a un autre consumer (ou au meme quand il redemarrera).
+3. Des que vous voyez `→ Traitement en cours...` dans le consumer salon, **tuez-le immediatement avec Ctrl+C** (avant `→ Traitement termine !`)
+
+4. Verifiez dans le Management UI → onglet **Queues** → queue `salon` :
+   - **Messages Ready : 0** — le message a disparu !
+   - Il est perdu a jamais. Le consumer n'a pas eu le temps de finir son traitement.
+
+5. Relancez le consumer salon :
+
+```bash
+docker compose exec php php /app/session-2/php/consumer_salon.php
+```
+
+6. Resultat : **rien ne se passe**. Le message ne revient pas.
+
+> **Pourquoi ?** Avec `auto_ack=true`, RabbitMQ supprime le message de la queue **immediatement** apres l'avoir envoye. Il ne sait pas si le consumer a reellement termine le traitement.
+
+#### Experience 2 : manual ack — le message est PRESERVE
+
+1. Lancer le consumer alertes :
+
+```bash
+docker compose exec php php /app/session-2/php/consumer_alertes.php
+```
+
+2. Envoyer un message de fumee avec le producer (attendre qu'il envoie `maison.cuisine.fumee`)
+
+3. Des que vous voyez `→ Traitement en cours...` dans le consumer alertes, **tuez-le immediatement avec Ctrl+C** (avant `→ Traitement termine !`)
+
+4. Verifiez dans le Management UI → onglet **Queues** → queue `alertes` :
+   - **Messages Ready : 1** — le message est toujours la !
+   - RabbitMQ l'a remis dans la queue parce que le consumer n'a pas envoye son ack.
+
+5. Relancez le consumer alertes :
+
+```bash
+docker compose exec php php /app/session-2/php/consumer_alertes.php
+```
+
+6. Resultat : **le message est re-delivre !** Le consumer le recoit a nouveau et peut le traiter correctement.
+
+> **Pourquoi ?** Avec `manual ack` (no_ack=false), RabbitMQ attend l'appel a `$msg->ack()` avant de supprimer le message. Si le consumer plante avant l'ack, le message retourne dans la queue et sera redistribue.
+
+#### Resume : quand utiliser quoi ?
+
+| Critere | Auto Ack | Manual Ack |
+|---------|----------|------------|
+| **Fiabilite** | Faible — message perdu si crash | Forte — message re-delivre si crash |
+| **Performance** | Plus rapide (pas d'aller-retour ack) | Legerement plus lent |
+| **Quand l'utiliser** | Logs non critiques, metriques jetables | Alertes, commandes, donnees importantes |
+| **En production** | Rarement | Presque toujours |
+
+#### Le code cle : la difference en PHP
+
+```php
+// === AUTO ACK (consumer_salon.php) ===
+// Le 4eme parametre (true) = no_ack = on ne demande pas d'ack
+$channel->basic_consume('salon', '', false, true, false, false, $callback);
+// Dans le callback : PAS de $msg->ack()
+
+// === MANUAL ACK (consumer_alertes.php) ===
+// Le 4eme parametre (false) = on demande un ack explicite
+$channel->basic_consume('alertes', '', false, false, false, false, $callback);
+// Dans le callback : $msg->ack() APRES le traitement
+```
+
+> **Regle d'or** : en production, utilisez **toujours** le manual ack pour les messages importants. Le cout en performance est negligeable face au risque de perte de donnees. Imaginez perdre une alerte incendie parce que le consumer a plante...
 
 ### Partie C : Bonus — Dead Letter Queue (DLQ)
 

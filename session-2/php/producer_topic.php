@@ -15,12 +15,15 @@ use PhpAmqpLib\Message\AMQPMessage;
 // Connexion au serveur RabbitMQ
 $host = getenv('RABBITMQ_HOST') ?: 'rabbitmq';
 $port = (int) (getenv('RABBITMQ_PORT') ?: 5672);
+// Par defaut on utilise guest/guest pour l'exercice 1
+// En exercice 2, changez les identifiants pour tester les permissions :
+// $connection = new AMQPStreamConnection($host, $port, 'capteur-user', 'capteur123');
 $connection = new AMQPStreamConnection($host, $port, 'guest', 'guest');
 $channel = $connection->channel();
 
 // Declaration du Topic Exchange "domotique"
 // Les parametres : nom, type, passive, durable, auto_delete
-$channel->exchange_declare('domotique', 'topic', false, true, false);
+//$channel->exchange_declare('domotique', 'topic', false, true, false);
 
 echo "[*] Producer demarre. Envoi de messages toutes les 3 secondes...\n";
 echo "[*] Appuyez sur Ctrl+C pour arreter.\n\n";

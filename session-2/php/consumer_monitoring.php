@@ -18,18 +18,22 @@ $port = (int) (getenv('RABBITMQ_PORT') ?: 5672);
 $connection = new AMQPStreamConnection($host, $port, 'guest', 'guest');
 $channel = $connection->channel();
 
-// Declaration du Topic Exchange "domotique"
-$channel->exchange_declare('domotique', 'topic', false, true, false);
-
-// Creation d'une queue exclusive et auto-delete
-list($queue_name, ,) = $channel->queue_declare('', false, false, true, true);
+// Declaration de la queue "monitoring" (durable pour survivre aux redemarrages)
+$channel->queue_declare('monitoring', false, true, false, false);
 
 // Binding : on s'abonne a tous les messages commencant par "maison."
-$channel->queue_bind($queue_name, 'domotique', 'maison.#');
+$channel->queue_bind('monitoring', 'domotique', 'maison.#');
 
 echo "[*] Consumer Monitoring demarre.\n";
 echo "[*] Binding key : maison.#\n";
 echo "[*] En attente de messages. Ctrl+C pour quitter.\n\n";
+
+// Fermeture propre lors de l'arret du script
+register_shutdown_function(function () use ($channel, $connection) {
+    $channel->close();
+    $connection->close();
+    echo "\n[x] Connexion fermee proprement\n";
+});
 
 // Callback appele pour chaque message recu
 $callback = function ($msg) {
@@ -54,16 +58,15 @@ $callback = function ($msg) {
         default:
             echo "[$routingKey] $sensor: $value\n";
     }
+
+    // Acquittement manuel : on confirme que le message a ete traite
+    $msg->ack();
 };
 
-// Lancement de la consommation avec auto_ack=true
-$channel->basic_consume($queue_name, '', false, true, false, false, $callback);
+// Lancement de la consommation avec manual ack (no_ack=false)
+$channel->basic_consume('monitoring', '', false, false, false, false, $callback);
 
 // Boucle d'attente des messages
 while ($channel->is_consuming()) {
     $channel->wait();
 }
-
-// Fermeture propre
-$channel->close();
-$connection->close();
