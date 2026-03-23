@@ -1,0 +1,9 @@
+{
+  "name": "session-3-rabbitmq",
+  "version": "1.0.0",
+  "description": "Session 3 - Architecture microservices IoT",
+  "dependencies": {
+    "amqplib": "^0.10.0",
+    "mqtt": "^5.0.0"
+  }
+}
