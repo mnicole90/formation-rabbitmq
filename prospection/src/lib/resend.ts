@@ -1,5 +1,14 @@
 import { Resend } from "resend";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function sendProspectionEmail(
   to: string,
   subject: string,
@@ -16,7 +25,7 @@ export async function sendProspectionEmail(
     from,
     to,
     subject,
-    html: body.replace(/\n/g, "<br>"),
+    html: escapeHtml(body).replace(/\n/g, "<br>"),
   });
 
   if (error) {

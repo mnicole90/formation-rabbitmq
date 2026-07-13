@@ -37,4 +37,21 @@ describe("sendProspectionEmail", () => {
       sendProspectionEmail("contact@lezorba.fr", "Une idée", "Corps")
     ).rejects.toThrow("Resend send failed: Invalid API key");
   });
+
+  it("escapes HTML special characters in the body before converting newlines", async () => {
+    sendMock.mockResolvedValue({ data: { id: "email-2" }, error: null });
+
+    await sendProspectionEmail(
+      "contact@lezorba.fr",
+      "Une idée",
+      'Bonjour <b>vous</b> & "associés"\nCordialement'
+    );
+
+    expect(sendMock).toHaveBeenCalledWith({
+      from: "prospection@kodesaas.fr",
+      to: "contact@lezorba.fr",
+      subject: "Une idée",
+      html: "Bonjour &lt;b&gt;vous&lt;/b&gt; &amp; &quot;associés&quot;<br>Cordialement",
+    });
+  });
 });
