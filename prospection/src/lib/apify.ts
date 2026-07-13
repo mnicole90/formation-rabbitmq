@@ -26,7 +26,7 @@ export async function findLinkedinProfile(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      queries: [`${prenom} ${nom} ${denomination}`],
+      searchQuery: `${prenom} ${nom} ${denomination}`,
       maxItems: 1,
     }),
   });

@@ -8,15 +8,13 @@ describe("findLinkedinProfile", () => {
 
   it("returns the first matching profile", async () => {
     process.env.APIFY_TOKEN = "test-token";
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => [
-          { linkedinUrl: "https://linkedin.com/in/sophie-martin", headline: "Gérante chez Le Zorba" },
-        ],
-      })
-    );
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { linkedinUrl: "https://linkedin.com/in/sophie-martin", headline: "Gérante chez Le Zorba" },
+      ],
+    });
+    vi.stubGlobal("fetch", mockFetch);
 
     const profile = await findLinkedinProfile("Sophie", "Martin", "Le Zorba");
 
@@ -24,6 +22,8 @@ describe("findLinkedinProfile", () => {
       url: "https://linkedin.com/in/sophie-martin",
       headline: "Gérante chez Le Zorba",
     });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.searchQuery).toBe("Sophie Martin Le Zorba");
   });
 
   it("returns null when no items are found", async () => {
