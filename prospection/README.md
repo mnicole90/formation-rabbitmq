@@ -61,6 +61,13 @@ Le fichier [`.env.example`](.env.example) liste exactement ces variables (plus
 `OPENROUTER_MODEL`, déjà défaulté à `anthropic/claude-sonnet-5`, et
 `APPROVAL_TIMEOUT_HOURS`, déjà défaulté à `24`).
 
+**Variable optionnelle utile en test : `EMAIL_OVERRIDE_TO`.** Si elle est
+définie, tous les emails de prospection partent vers cette adresse au lieu du
+vrai contact du bar (le sujet garde une trace du destinataire réel, ex.
+`[Test → contact@lebar.fr] Une idée pour votre bar`). Utile pour tester le
+pipeline sans jamais contacter un vrai prospect par erreur — à laisser vide en
+production.
+
 **Point d'attention Apify** : l'actor `harvestapi/linkedin-profile-search` est
 un actor tiers du Store Apify — assure-toi de l'avoir "essayé" une fois dans la
 console Apify (bouton *Try for free*) pour qu'il soit accessible à ton compte
@@ -177,6 +184,8 @@ lit depuis l'auth CLI), pas une variable de la task elle-même.
       si tu veux les distinguer).
 - [ ] `RESEND_FROM` utilise un domaine vérifié dans Resend (sinon les emails
       partiront en erreur ou en spam).
+- [ ] `EMAIL_OVERRIDE_TO` est **vide/absente** en prod (sinon tous les emails
+      partiront vers cette adresse de test au lieu des vrais prospects).
 - [ ] Le cron de `prospection-cron` (`0 9 * * *`, UTC) correspond bien à
       l'heure voulue — ajuste `cron` et ajoute `timezone: "Europe/Paris"` dans
       `src/trigger/prospection-cron.ts` si besoin.
