@@ -93,6 +93,7 @@ export async function getFiche(siren: string): Promise<PappersFiche> {
   const url = new URL(`${PAPPERS_BASE_URL}/entreprise`);
   url.searchParams.set("api_token", apiKey);
   url.searchParams.set("siren", siren);
+  url.searchParams.set("champs_supplementaires", "email");
 
   const response = await fetch(url.toString());
   if (!response.ok) {

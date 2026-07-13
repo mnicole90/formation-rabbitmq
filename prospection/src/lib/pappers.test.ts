@@ -62,6 +62,8 @@ describe("pappers", () => {
 
     expect(fiche.email).toBe("contact@lezorba.fr");
     expect(fiche.dirigeants).toEqual([{ nom: "Martin", prenom: "Sophie", fonction: "Gérante" }]);
+    const calledUrl = mockFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain("champs_supplementaires=email");
   });
 
   it("throws when Pappers responds with an error status", async () => {
