@@ -43,7 +43,7 @@ export async function findEmailOnWebsite(url: string): Promise<string | null> {
   });
 
   if (!response.ok) {
-    throw new Error(`Firecrawl scrape failed: ${response.status} ${await response.text()}`);
+    return null;
   }
 
   const data = (await response.json()) as FirecrawlScrapeResponse;
@@ -85,7 +85,7 @@ export async function findWebsiteUrl(
   });
 
   if (!response.ok) {
-    throw new Error(`Firecrawl search failed: ${response.status} ${await response.text()}`);
+    return null;
   }
 
   const data = (await response.json()) as FirecrawlSearchResponse;

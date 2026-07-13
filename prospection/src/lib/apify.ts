@@ -32,7 +32,7 @@ export async function findLinkedinProfile(
   });
 
   if (!response.ok) {
-    throw new Error(`Apify run failed: ${response.status} ${await response.text()}`);
+    return null;
   }
 
   const items = (await response.json()) as HarvestApiProfileItem[];

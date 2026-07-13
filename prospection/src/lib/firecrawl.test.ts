@@ -49,6 +49,21 @@ describe("findEmailOnWebsite", () => {
     const email = await findEmailOnWebsite("https://lebar11.fr");
     expect(email).toBeNull();
   });
+
+  it("degrades to null instead of throwing when Firecrawl rejects the site (e.g. 403 unsupported)", async () => {
+    process.env.FIRECRAWL_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ success: false, error: "We do not support this site." }),
+      })
+    );
+
+    const email = await findEmailOnWebsite("https://unsupported-site.example");
+    expect(email).toBeNull();
+  });
 });
 
 describe("findWebsiteUrl", () => {
@@ -105,6 +120,21 @@ describe("findWebsiteUrl", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: [] }) })
+    );
+
+    const url = await findWebsiteUrl("Le Zorba", "10 rue de la Roquette, 75011 Paris");
+    expect(url).toBeNull();
+  });
+
+  it("degrades to null instead of throwing when the search request fails", async () => {
+    process.env.FIRECRAWL_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "Internal Server Error",
+      })
     );
 
     const url = await findWebsiteUrl("Le Zorba", "10 rue de la Roquette, 75011 Paris");

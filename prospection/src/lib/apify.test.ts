@@ -47,4 +47,19 @@ describe("findLinkedinProfile", () => {
     const profile = await findLinkedinProfile("Jean", "Dupont", "Le Bar");
     expect(profile?.url).toBe("https://linkedin.com/in/jean-dupont");
   });
+
+  it("degrades to null instead of throwing when the Apify run fails", async () => {
+    process.env.APIFY_TOKEN = "test-token";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "Internal Server Error",
+      })
+    );
+
+    const profile = await findLinkedinProfile("Sophie", "Martin", "Le Zorba");
+    expect(profile).toBeNull();
+  });
 });
