@@ -74,7 +74,7 @@ interface PappersEntrepriseResponse {
   siren: string;
   nom_entreprise: string;
   code_naf: string;
-  site_internet: string | null;
+  sites_internet: string[];
   email: string | null;
   siege: {
     adresse_ligne_1: string;
@@ -93,7 +93,7 @@ export async function getFiche(siren: string): Promise<PappersFiche> {
   const url = new URL(`${PAPPERS_BASE_URL}/entreprise`);
   url.searchParams.set("api_token", apiKey);
   url.searchParams.set("siren", siren);
-  url.searchParams.set("champs_supplementaires", "email");
+  url.searchParams.set("champs_supplementaires", "email,sites_internet");
 
   const response = await fetch(url.toString());
   if (!response.ok) {
@@ -108,7 +108,7 @@ export async function getFiche(siren: string): Promise<PappersFiche> {
     adresse: data.siege.adresse_ligne_1,
     codePostal: data.siege.code_postal,
     activite: data.code_naf,
-    website: data.site_internet,
+    website: data.sites_internet[0] ?? null,
     email: data.email,
     dirigeants: data.representants.map((r) => ({
       nom: r.nom,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { extractEmail, findEmailOnWebsite } from "./firecrawl.js";
+import { extractEmail, findEmailOnWebsite, findWebsiteUrl } from "./firecrawl.js";
 
 describe("extractEmail", () => {
   it("finds a valid email in markdown content", () => {
@@ -48,5 +48,66 @@ describe("findEmailOnWebsite", () => {
 
     const email = await findEmailOnWebsite("https://lebar11.fr");
     expect(email).toBeNull();
+  });
+});
+
+describe("findWebsiteUrl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns the first non-directory result", async () => {
+    process.env.FIRECRAWL_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [
+            { url: "https://www.pappers.fr/entreprise/le-zorba-111222333", title: "Le Zorba" },
+            { url: "https://www.societe.com/societe/le-zorba-111222333.html", title: "Le Zorba" },
+            { url: "https://lezorba-paris.fr", title: "Le Zorba - Bar à cocktails" },
+          ],
+        }),
+      })
+    );
+
+    const url = await findWebsiteUrl("Le Zorba", "10 rue de la Roquette, 75011 Paris");
+    expect(url).toBe("https://lezorba-paris.fr");
+  });
+
+  it("returns null when only directory/registry results are found", async () => {
+    process.env.FIRECRAWL_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [
+            { url: "https://www.pappers.fr/entreprise/le-zorba-111222333", title: "Le Zorba" },
+            {
+              url: "https://annuaire-entreprises.data.gouv.fr/entreprise/le-zorba-111222333",
+              title: "Le Zorba",
+            },
+          ],
+        }),
+      })
+    );
+
+    const url = await findWebsiteUrl("Le Zorba", "10 rue de la Roquette, 75011 Paris");
+    expect(url).toBeNull();
+  });
+
+  it("returns null when no results are found", async () => {
+    process.env.FIRECRAWL_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: [] }) })
+    );
+
+    const url = await findWebsiteUrl("Le Zorba", "10 rue de la Roquette, 75011 Paris");
+    expect(url).toBeNull();
   });
 });

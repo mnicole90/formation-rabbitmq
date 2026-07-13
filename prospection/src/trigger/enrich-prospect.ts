@@ -1,6 +1,6 @@
 import { logger, queue, task, wait } from "@trigger.dev/sdk";
 import { getFiche, type PappersFiche } from "../lib/pappers.js";
-import { findEmailOnWebsite } from "../lib/firecrawl.js";
+import { findEmailOnWebsite, findWebsiteUrl } from "../lib/firecrawl.js";
 import { findLinkedinProfile } from "../lib/apify.js";
 import { generateMessages } from "../lib/openrouter.js";
 import {
@@ -39,10 +39,20 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
 
   let email = fiche.email;
   let emailSource: "pappers" | "firecrawl" | null = email ? "pappers" : null;
+  let website = fiche.website;
 
-  if (!email && fiche.website) {
-    email = await findEmailOnWebsite(fiche.website);
+  if (!email && website) {
+    email = await findEmailOnWebsite(website);
     if (email) emailSource = "firecrawl";
+  }
+
+  if (!email) {
+    const discoveredWebsite = await findWebsiteUrl(fiche.denomination, fiche.adresse);
+    if (discoveredWebsite) {
+      website = discoveredWebsite;
+      email = await findEmailOnWebsite(discoveredWebsite);
+      if (email) emailSource = "firecrawl";
+    }
   }
 
   const dirigeant = fiche.dirigeants[0];
@@ -70,7 +80,7 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
     adresse: fiche.adresse,
     codePostal: fiche.codePostal,
     activite: fiche.activite,
-    website: fiche.website,
+    website,
     email,
     emailSource,
     status: "enriched",

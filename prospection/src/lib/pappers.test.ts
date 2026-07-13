@@ -50,7 +50,7 @@ describe("pappers", () => {
         siren: "111222333",
         nom_entreprise: "Le Zorba",
         code_naf: "56.30Z",
-        site_internet: "https://lezorba.fr",
+        sites_internet: ["https://lezorba.fr"],
         email: "contact@lezorba.fr",
         siege: { adresse_ligne_1: "10 rue de la Roquette", code_postal: "75011" },
         representants: [{ nom: "Martin", prenom: "Sophie", qualite: "Gérante" }],
@@ -61,9 +61,30 @@ describe("pappers", () => {
     const fiche = await getFiche("111222333");
 
     expect(fiche.email).toBe("contact@lezorba.fr");
+    expect(fiche.website).toBe("https://lezorba.fr");
     expect(fiche.dirigeants).toEqual([{ nom: "Martin", prenom: "Sophie", fonction: "Gérante" }]);
     const calledUrl = mockFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain("champs_supplementaires=email");
+    expect(calledUrl).toContain("champs_supplementaires=email%2Csites_internet");
+  });
+
+  it("returns null website when sites_internet is empty", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        siren: "111222333",
+        nom_entreprise: "Le Zorba",
+        code_naf: "56.30Z",
+        sites_internet: [],
+        email: null,
+        siege: { adresse_ligne_1: "10 rue de la Roquette", code_postal: "75011" },
+        representants: [],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const fiche = await getFiche("111222333");
+
+    expect(fiche.website).toBeNull();
   });
 
   it("throws when Pappers responds with an error status", async () => {

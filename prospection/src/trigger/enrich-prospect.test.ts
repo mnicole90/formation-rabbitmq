@@ -16,7 +16,7 @@ vi.mock("../lib/resend.js");
 vi.mock("../db/queries.js");
 
 import { getFiche } from "../lib/pappers.js";
-import { findEmailOnWebsite } from "../lib/firecrawl.js";
+import { findEmailOnWebsite, findWebsiteUrl } from "../lib/firecrawl.js";
 import { findLinkedinProfile } from "../lib/apify.js";
 import { generateMessages } from "../lib/openrouter.js";
 import {
@@ -64,6 +64,7 @@ describe("runEnrichProspect", () => {
     vi.mocked(insertProspect).mockResolvedValue(1);
     vi.mocked(insertDirigeant).mockResolvedValue(1);
     vi.mocked(insertMessage).mockResolvedValue(1);
+    vi.mocked(findWebsiteUrl).mockResolvedValue(null);
   });
 
   it("marks a prospect as linkedin_only when no email is found anywhere", async () => {
@@ -75,6 +76,26 @@ describe("runEnrichProspect", () => {
     expect(sendLinkedinDraft).toHaveBeenCalled();
     expect(sendEmailDraftWithApproval).not.toHaveBeenCalled();
     expect(updateProspectStatus).toHaveBeenCalledWith(1, "linkedin_only");
+    expect(findWebsiteUrl).toHaveBeenCalledWith("Le Zorba", "10 rue de la Roquette");
+  });
+
+  it("finds an email via web search when Pappers has no website and its own site scrape fails", async () => {
+    vi.mocked(getFiche).mockResolvedValue({ ...baseFiche, website: null });
+    vi.mocked(findWebsiteUrl).mockResolvedValue("https://lezorba-paris.fr");
+    vi.mocked(findEmailOnWebsite).mockResolvedValue("contact@lezorba-paris.fr");
+    vi.mocked(findApprovalClick).mockResolvedValueOnce({
+      approved: true,
+      nextOffset: 1,
+      callbackQueryId: "cbq-2",
+    });
+
+    const result = await runEnrichProspect({ siren: "111222333" });
+
+    expect(findEmailOnWebsite).toHaveBeenCalledWith("https://lezorba-paris.fr");
+    expect(insertProspect).toHaveBeenCalledWith(
+      expect.objectContaining({ website: "https://lezorba-paris.fr", emailSource: "firecrawl" })
+    );
+    expect(result.status).toBe("email_sent");
   });
 
   it("sends the email and marks it sent when the approval click arrives", async () => {
