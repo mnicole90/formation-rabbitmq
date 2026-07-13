@@ -17,6 +17,7 @@ describe(".env.example", () => {
       "RESEND_API_KEY",
       "RESEND_FROM",
       "APPROVAL_TIMEOUT_HOURS",
+      "EMAIL_OVERRIDE_TO",
     ];
 
     for (const key of required) {

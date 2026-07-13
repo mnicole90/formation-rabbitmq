@@ -1,7 +1,6 @@
 export interface ProspectContext {
   denomination: string;
   activite: string;
-  adresse: string;
   dirigeantPrenom: string;
   dirigeantNom: string;
   linkedinHeadline: string | null;
@@ -18,18 +17,22 @@ interface OpenRouterResponse {
 }
 
 function buildPrompt(ctx: ProspectContext): string {
-  return `Tu rédiges des messages de prospection pour KodeSaaS, qui aide les commerces à se digitaliser (site web, réservation, automatisation).
+  return `Tu rédiges des messages de prospection pour un réseau de bars partenaires.
+Le service : on envoie des clients aux bars du réseau pour bien les remplir. Quand un
+bar affiche complet, on le sait en temps réel et on redirige automatiquement le
+surplus de clientèle vers les autres bars partenaires du réseau — pour le bar,
+ça veut dire plus de monde aux heures creuses et jamais de clients perdus faute
+de place.
 
 Contexte :
 - Bar : ${ctx.denomination}
 - Activité : ${ctx.activite}
-- Adresse : ${ctx.adresse}
 - Dirigeant : ${ctx.dirigeantPrenom} ${ctx.dirigeantNom}
 - Profil LinkedIn : ${ctx.linkedinHeadline ?? "non disponible"}
 
 Rédige :
-1. Un message LinkedIn court (3-4 phrases, ton chaleureux et pro) pour une demande de connexion, mentionnant un détail concret sur le bar ou son profil.
-2. Un email de prospection (objet court + corps de 5-8 phrases) proposant un échange rapide.
+1. Un message LinkedIn court (3-4 phrases, ton chaleureux et pro) pour une demande de connexion, mentionnant un détail concret sur le bar ou son profil (jamais l'adresse).
+2. Un email de prospection (objet court + corps de 5-8 phrases) qui présente le principe du réseau (clients envoyés, redirection automatique du surplus vers les bars partenaires quand complet) et propose un échange rapide.
 
 Réponds STRICTEMENT en JSON, sans texte autour, au format :
 {"linkedinMessage": "...", "emailSubject": "...", "emailBody": "..."}`;

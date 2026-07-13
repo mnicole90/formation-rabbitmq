@@ -50,6 +50,7 @@ export async function searchBars75011(page: number): Promise<PappersSearchResult
   url.searchParams.set("api_token", apiKey);
   url.searchParams.set("code_naf", "56.30Z");
   url.searchParams.set("code_postal", "75011");
+  url.searchParams.set("entreprise_cessee", "false");
   url.searchParams.set("par_page", "20");
   url.searchParams.set("page", String(page));
 

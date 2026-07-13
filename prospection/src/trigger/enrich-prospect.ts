@@ -59,7 +59,6 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
   const generated = await generateMessages({
     denomination: fiche.denomination,
     activite: fiche.activite,
-    adresse: fiche.adresse,
     dirigeantPrenom: dirigeant?.prenom ?? "l'équipe",
     dirigeantNom: dirigeant?.nom ?? "",
     linkedinHeadline: linkedinProfile?.headline ?? null,

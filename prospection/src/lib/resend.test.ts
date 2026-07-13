@@ -14,6 +14,7 @@ describe("sendProspectionEmail", () => {
   beforeEach(() => {
     process.env.RESEND_API_KEY = "test-key";
     process.env.RESEND_FROM = "prospection@kodesaas.fr";
+    delete process.env.EMAIL_OVERRIDE_TO;
     sendMock.mockReset();
   });
 
@@ -52,6 +53,20 @@ describe("sendProspectionEmail", () => {
       to: "contact@lezorba.fr",
       subject: "Une idée",
       html: "Bonjour &lt;b&gt;vous&lt;/b&gt; &amp; &quot;associés&quot;<br>Cordialement",
+    });
+  });
+
+  it("redirects to EMAIL_OVERRIDE_TO when set, keeping the real recipient visible in the subject", async () => {
+    process.env.EMAIL_OVERRIDE_TO = "maxime@kodesaas.com";
+    sendMock.mockResolvedValue({ data: { id: "email-3" }, error: null });
+
+    await sendProspectionEmail("contact@lezorba.fr", "Une idée", "Corps");
+
+    expect(sendMock).toHaveBeenCalledWith({
+      from: "prospection@kodesaas.fr",
+      to: "maxime@kodesaas.com",
+      subject: "[Test → contact@lezorba.fr] Une idée",
+      html: "Corps",
     });
   });
 });

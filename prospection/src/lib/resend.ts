@@ -19,12 +19,16 @@ export async function sendProspectionEmail(
   if (!apiKey) throw new Error("RESEND_API_KEY is not set");
   if (!from) throw new Error("RESEND_FROM is not set");
 
+  const overrideTo = process.env.EMAIL_OVERRIDE_TO;
+  const recipient = overrideTo || to;
+  const finalSubject = overrideTo ? `[Test → ${to}] ${subject}` : subject;
+
   const resend = new Resend(apiKey);
 
   const { error } = await resend.emails.send({
     from,
-    to,
-    subject,
+    to: recipient,
+    subject: finalSubject,
     html: escapeHtml(body).replace(/\n/g, "<br>"),
   });
 

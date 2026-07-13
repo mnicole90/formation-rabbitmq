@@ -40,6 +40,7 @@ describe("pappers", () => {
     const calledUrl = mockFetch.mock.calls[0][0] as string;
     expect(calledUrl).toContain("code_naf=56.30Z");
     expect(calledUrl).toContain("code_postal=75011");
+    expect(calledUrl).toContain("entreprise_cessee=false");
   });
 
   it("maps fiche entreprise to PappersFiche with dirigeants", async () => {

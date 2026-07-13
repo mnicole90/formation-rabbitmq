@@ -9,7 +9,6 @@ describe("generateMessages", () => {
   const ctx = {
     denomination: "Le Zorba",
     activite: "56.30Z",
-    adresse: "10 rue de la Roquette",
     dirigeantPrenom: "Sophie",
     dirigeantNom: "Martin",
     linkedinHeadline: "Gérante chez Le Zorba",
