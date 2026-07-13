@@ -11,8 +11,7 @@ interface HarvestApiProfileItem {
 
 export async function findLinkedinProfile(
   prenom: string,
-  nom: string,
-  denomination: string
+  nom: string
 ): Promise<LinkedinProfile | null> {
   const token = process.env.APIFY_TOKEN;
   if (!token) throw new Error("APIFY_TOKEN is not set");
@@ -26,7 +25,8 @@ export async function findLinkedinProfile(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      searchQuery: `${prenom} ${nom} ${denomination}`,
+      searchQuery: `${prenom} ${nom}`,
+      locations: ["Paris"],
       maxItems: 1,
     }),
   });

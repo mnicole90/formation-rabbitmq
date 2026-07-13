@@ -63,7 +63,7 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
   }
 
   const linkedinProfile = dirigeant
-    ? await findLinkedinProfile(dirigeant.prenom, dirigeant.nom, fiche.denomination)
+    ? await findLinkedinProfile(dirigeant.prenom, dirigeant.nom)
     : null;
 
   const generated = await generateMessages({

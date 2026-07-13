@@ -16,21 +16,22 @@ describe("findLinkedinProfile", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const profile = await findLinkedinProfile("Sophie", "Martin", "Le Zorba");
+    const profile = await findLinkedinProfile("Sophie", "Martin");
 
     expect(profile).toEqual({
       url: "https://linkedin.com/in/sophie-martin",
       headline: "Gérante chez Le Zorba",
     });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.searchQuery).toBe("Sophie Martin Le Zorba");
+    expect(body.searchQuery).toBe("Sophie Martin");
+    expect(body.locations).toEqual(["Paris"]);
   });
 
   it("returns null when no items are found", async () => {
     process.env.APIFY_TOKEN = "test-token";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
 
-    const profile = await findLinkedinProfile("Sophie", "Martin", "Le Zorba");
+    const profile = await findLinkedinProfile("Sophie", "Martin");
     expect(profile).toBeNull();
   });
 
@@ -44,7 +45,7 @@ describe("findLinkedinProfile", () => {
       })
     );
 
-    const profile = await findLinkedinProfile("Jean", "Dupont", "Le Bar");
+    const profile = await findLinkedinProfile("Jean", "Dupont");
     expect(profile?.url).toBe("https://linkedin.com/in/jean-dupont");
   });
 
@@ -59,7 +60,7 @@ describe("findLinkedinProfile", () => {
       })
     );
 
-    const profile = await findLinkedinProfile("Sophie", "Martin", "Le Zorba");
+    const profile = await findLinkedinProfile("Sophie", "Martin");
     expect(profile).toBeNull();
   });
 });
