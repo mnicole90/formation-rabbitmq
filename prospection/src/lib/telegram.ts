@@ -98,7 +98,14 @@ export async function getUpdatesSince(
 }
 
 export async function answerCallback(callbackQueryId: string, text: string): Promise<void> {
-  await callTelegram("answerCallbackQuery", { callback_query_id: callbackQueryId, text });
+  // Best-effort UX acknowledgment only (clears the button's loading spinner).
+  // Telegram callback queries expire quickly — a failure here (e.g. "query is
+  // too old") must never abort the actual approved action (sending the email).
+  try {
+    await callTelegram("answerCallbackQuery", { callback_query_id: callbackQueryId, text });
+  } catch {
+    // swallow — see comment above
+  }
 }
 
 export async function findApprovalClick(

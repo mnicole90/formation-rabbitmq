@@ -120,8 +120,31 @@ describe("telegram", () => {
     const mockFetch = vi.fn().mockRejectedValue(new TypeError("fetch failed: connection reset"));
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(answerCallback("cbq-5", "Test")).rejects.toThrow("network error");
-    await expect(answerCallback("cbq-5", "Test")).rejects.not.toThrow(/test-token/i);
-    await expect(answerCallback("cbq-5", "Test")).rejects.not.toThrow(/api\.telegram\.org/);
+    await expect(getUpdatesSince(0)).rejects.toThrow("network error");
+    await expect(getUpdatesSince(0)).rejects.not.toThrow(/test-token/i);
+    await expect(getUpdatesSince(0)).rejects.not.toThrow(/api\.telegram\.org/);
+  });
+
+  it("never throws from answerCallback, even when Telegram rejects the request (e.g. expired callback query)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () =>
+        JSON.stringify({
+          ok: false,
+          error_code: 400,
+          description: "Bad Request: query is too old and response timeout expired",
+        }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await expect(answerCallback("cbq-5", "Test")).resolves.toBeUndefined();
+  });
+
+  it("never throws from answerCallback on a network error", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", mockFetch);
+
+    await expect(answerCallback("cbq-5", "Test")).resolves.toBeUndefined();
   });
 });
