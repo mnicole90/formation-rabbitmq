@@ -13,11 +13,16 @@ function chatId(): string {
 }
 
 async function callTelegram<T>(method: string, body: Record<string, unknown>): Promise<T> {
-  const response = await fetch(botUrl(method), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let response;
+  try {
+    response = await fetch(botUrl(method), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    throw new Error(`Telegram ${method} network error`);
+  }
 
   if (!response.ok) {
     throw new Error(`Telegram ${method} failed: ${response.status} ${await response.text()}`);

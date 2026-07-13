@@ -115,4 +115,13 @@ describe("telegram", () => {
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.callback_query_id).toBe("cbq-5");
   });
+
+  it("does not leak the bot token in network error messages", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new TypeError("fetch failed: connection reset"));
+    vi.stubGlobal("fetch", mockFetch);
+
+    await expect(answerCallback("cbq-5", "Test")).rejects.toThrow("network error");
+    await expect(answerCallback("cbq-5", "Test")).rejects.not.toThrow(/test-token/i);
+    await expect(answerCallback("cbq-5", "Test")).rejects.not.toThrow(/api\.telegram\.org/);
+  });
 });
