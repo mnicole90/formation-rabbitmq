@@ -87,6 +87,32 @@ describe("pappers", () => {
     expect(fiche.website).toBeNull();
   });
 
+  it("skips corporate (personne morale) representatives with no nom/prenom", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        siren: "111222333",
+        nom_entreprise: "Iguana Batignolles",
+        code_naf: "56.30Z",
+        sites_internet: [],
+        email: null,
+        siege: { adresse_ligne_1: "10 rue de la Roquette", code_postal: "75011" },
+        representants: [
+          {
+            qualite: "Gérant",
+            personne_morale: true,
+            denomination: "ABA HOLDING",
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const fiche = await getFiche("111222333");
+
+    expect(fiche.dirigeants).toEqual([]);
+  });
+
   it("throws when Pappers responds with an error status", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,

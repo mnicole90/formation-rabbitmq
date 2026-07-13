@@ -81,9 +81,10 @@ interface PappersEntrepriseResponse {
     code_postal: string;
   };
   representants: Array<{
-    nom: string;
-    prenom: string;
+    nom?: string | null;
+    prenom?: string | null;
     qualite: string | null;
+    personne_morale?: boolean;
   }>;
 }
 
@@ -110,10 +111,14 @@ export async function getFiche(siren: string): Promise<PappersFiche> {
     activite: data.code_naf,
     website: data.sites_internet[0] ?? null,
     email: data.email,
-    dirigeants: data.representants.map((r) => ({
-      nom: r.nom,
-      prenom: r.prenom,
-      fonction: r.qualite,
-    })),
+    dirigeants: data.representants
+      .filter((r): r is typeof r & { nom: string; prenom: string } =>
+        Boolean(!r.personne_morale && r.nom && r.prenom)
+      )
+      .map((r) => ({
+        nom: r.nom,
+        prenom: r.prenom,
+        fonction: r.qualite,
+      })),
   };
 }
