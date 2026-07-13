@@ -1,0 +1,25 @@
+import { Resend } from "resend";
+
+export async function sendProspectionEmail(
+  to: string,
+  subject: string,
+  body: string
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
+  if (!apiKey) throw new Error("RESEND_API_KEY is not set");
+  if (!from) throw new Error("RESEND_FROM is not set");
+
+  const resend = new Resend(apiKey);
+
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject,
+    html: body.replace(/\n/g, "<br>"),
+  });
+
+  if (error) {
+    throw new Error(`Resend send failed: ${error.message}`);
+  }
+}
