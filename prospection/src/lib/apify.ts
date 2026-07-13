@@ -1,12 +1,20 @@
 export interface LinkedinProfile {
   url: string;
   headline: string | null;
+  about: string | null;
+  isEmpty: boolean;
 }
 
 interface HarvestApiProfileItem {
   linkedinUrl?: string;
   publicUrl?: string;
-  headline?: string;
+  headline?: string | null;
+  about?: string | null;
+  experience?: unknown[];
+}
+
+function isPlaceholder(value: string | null | undefined): boolean {
+  return !value || value.trim() === "" || value.trim() === "--";
 }
 
 export async function findLinkedinProfile(
@@ -42,8 +50,14 @@ export async function findLinkedinProfile(
   const profileUrl = first.linkedinUrl ?? first.publicUrl;
   if (!profileUrl) return null;
 
+  const headline = isPlaceholder(first.headline) ? null : (first.headline as string);
+  const about = isPlaceholder(first.about) ? null : (first.about as string);
+  const hasExperience = Array.isArray(first.experience) && first.experience.length > 0;
+
   return {
     url: profileUrl,
-    headline: first.headline ?? null,
+    headline,
+    about,
+    isEmpty: headline === null && about === null && !hasExperience,
   };
 }

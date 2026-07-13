@@ -66,12 +66,15 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
     ? await findLinkedinProfile(dirigeant.prenom, dirigeant.nom)
     : null;
 
+  const hasUsefulLinkedinInfo = Boolean(linkedinProfile && !linkedinProfile.isEmpty);
+
   const generated = await generateMessages({
     denomination: fiche.denomination,
     activite: fiche.activite,
     dirigeantPrenom: dirigeant?.prenom ?? "l'équipe",
     dirigeantNom: dirigeant?.nom ?? "",
-    linkedinHeadline: linkedinProfile?.headline ?? null,
+    linkedinHeadline: hasUsefulLinkedinInfo ? linkedinProfile!.headline : null,
+    linkedinAbout: hasUsefulLinkedinInfo ? linkedinProfile!.about : null,
   });
 
   const prospectId = await insertProspect({
@@ -104,7 +107,12 @@ export async function runEnrichProspect(payload: EnrichProspectPayload) {
     status: "draft",
   });
 
-  await sendLinkedinDraft(fiche.denomination, generated.linkedinMessage, linkedinProfile?.url ?? null);
+  await sendLinkedinDraft(
+    fiche.denomination,
+    generated.linkedinMessage,
+    linkedinProfile?.url ?? null,
+    linkedinProfile?.isEmpty ?? false
+  );
 
   if (!email) {
     await updateProspectStatus(prospectId, "linkedin_only");

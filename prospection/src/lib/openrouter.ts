@@ -4,6 +4,7 @@ export interface ProspectContext {
   dirigeantPrenom: string;
   dirigeantNom: string;
   linkedinHeadline: string | null;
+  linkedinAbout: string | null;
 }
 
 export interface GeneratedMessages {
@@ -29,9 +30,10 @@ Contexte :
 - Activité : ${ctx.activite}
 - Dirigeant : ${ctx.dirigeantPrenom} ${ctx.dirigeantNom}
 - Profil LinkedIn : ${ctx.linkedinHeadline ?? "non disponible"}
+- Bio LinkedIn : ${ctx.linkedinAbout ?? "non disponible"}
 
 Rédige :
-1. Un message LinkedIn court (3-4 phrases, ton chaleureux et pro) pour une demande de connexion, mentionnant un détail concret sur le bar ou son profil (jamais l'adresse).
+1. Un message LinkedIn court (3-4 phrases, ton chaleureux et pro) pour une demande de connexion. Si le profil ou la bio contiennent une information concrète (poste, passion, projet), personnalise le message en t'appuyant dessus. Sinon reste générique sur l'activité du bar (jamais l'adresse).
 2. Un email de prospection (objet court + corps de 5-8 phrases) qui présente le principe du réseau (clients envoyés, redirection automatique du surplus vers les bars partenaires quand complet) et propose un échange rapide.
 
 Réponds STRICTEMENT en JSON, sans texte autour, au format :

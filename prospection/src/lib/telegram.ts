@@ -38,11 +38,18 @@ async function callTelegram<T>(method: string, body: Record<string, unknown>): P
 export async function sendLinkedinDraft(
   denomination: string,
   message: string,
-  profileUrl: string | null
+  profileUrl: string | null,
+  profileIsEmpty: boolean = false
 ): Promise<void> {
-  const text = profileUrl
-    ? `🔗 LinkedIn — ${denomination}\n\n${message}\n\nProfil : ${profileUrl}`
-    : `🔗 LinkedIn — ${denomination}\n\n${message}\n\n(Profil LinkedIn non trouvé)`;
+  let text: string;
+  if (!profileUrl) {
+    text = `🔗 LinkedIn — ${denomination}\n\n${message}\n\n(Profil LinkedIn non trouvé)`;
+  } else {
+    text = `🔗 LinkedIn — ${denomination}\n\n${message}\n\nProfil : ${profileUrl}`;
+    if (profileIsEmpty) {
+      text += `\n\n⚠️ Profil LinkedIn peu renseigné (pas de bio ni d'expérience visible).`;
+    }
+  }
 
   await callTelegram("sendMessage", { chat_id: chatId(), text });
 }

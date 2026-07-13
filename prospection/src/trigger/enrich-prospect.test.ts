@@ -59,6 +59,8 @@ describe("runEnrichProspect", () => {
     vi.mocked(findLinkedinProfile).mockResolvedValue({
       url: "https://linkedin.com/in/sophie-martin",
       headline: "Gérante chez Le Zorba",
+      about: "Passionnée de mixologie.",
+      isEmpty: false,
     });
     vi.mocked(generateMessages).mockResolvedValue(generatedMessages);
     vi.mocked(insertProspect).mockResolvedValue(1);
@@ -77,6 +79,28 @@ describe("runEnrichProspect", () => {
     expect(sendEmailDraftWithApproval).not.toHaveBeenCalled();
     expect(updateProspectStatus).toHaveBeenCalledWith(1, "linkedin_only");
     expect(findWebsiteUrl).toHaveBeenCalledWith("Le Zorba", "10 rue de la Roquette");
+  });
+
+  it("passes null LinkedIn context to the LLM and flags the Telegram draft when the profile is empty", async () => {
+    vi.mocked(findLinkedinProfile).mockResolvedValue({
+      url: "https://linkedin.com/in/brahim-younsi",
+      headline: null,
+      about: null,
+      isEmpty: true,
+    });
+    vi.mocked(findEmailOnWebsite).mockResolvedValue(null);
+
+    await runEnrichProspect({ siren: "111222333" });
+
+    expect(generateMessages).toHaveBeenCalledWith(
+      expect.objectContaining({ linkedinHeadline: null, linkedinAbout: null })
+    );
+    expect(sendLinkedinDraft).toHaveBeenCalledWith(
+      "Le Zorba",
+      generatedMessages.linkedinMessage,
+      "https://linkedin.com/in/brahim-younsi",
+      true
+    );
   });
 
   it("finds an email via web search when Pappers has no website and its own site scrape fails", async () => {

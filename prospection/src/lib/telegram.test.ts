@@ -29,6 +29,25 @@ describe("telegram", () => {
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.chat_id).toBe("12345");
     expect(body.text).toContain("https://linkedin.com/in/sophie-martin");
+    expect(body.text).not.toContain("peu renseigné");
+  });
+
+  it("warns when the LinkedIn profile is empty", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, result: {} }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await sendLinkedinDraft(
+      "Le Zorba",
+      "Bonjour Brahim !",
+      "https://linkedin.com/in/brahim-younsi",
+      true
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.text).toContain("peu renseigné");
   });
 
   it("sends an email draft with an approval button", async () => {
