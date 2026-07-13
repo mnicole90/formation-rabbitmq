@@ -16,8 +16,24 @@ export async function getExistingSirens(sirens: string[]): Promise<Set<string>> 
 }
 
 export async function insertProspect(data: NewProspect): Promise<number> {
-  const [row] = await db.insert(prospects).values(data).returning({ id: prospects.id });
-  return row.id;
+  const [inserted] = await db
+    .insert(prospects)
+    .values(data)
+    .onConflictDoNothing({ target: prospects.siren })
+    .returning({ id: prospects.id });
+
+  if (inserted) return inserted.id;
+
+  const [existing] = await db
+    .select({ id: prospects.id })
+    .from(prospects)
+    .where(eq(prospects.siren, data.siren));
+
+  if (!existing) {
+    throw new Error(`insertProspect: conflict on siren ${data.siren} but no existing row found`);
+  }
+
+  return existing.id;
 }
 
 export async function insertDirigeant(data: NewDirigeant): Promise<number> {

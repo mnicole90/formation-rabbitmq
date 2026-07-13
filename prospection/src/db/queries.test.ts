@@ -42,6 +42,28 @@ describe.skipIf(!process.env.DATABASE_URL)("queries", () => {
     expect(id).toBeGreaterThan(0);
   });
 
+  it("is idempotent when called twice with the same siren", async () => {
+    const firstId = await insertProspect({
+      siren: TEST_SIREN,
+      denomination: "Le Bar Test",
+      adresse: "1 rue du Test",
+      codePostal: "75011",
+      activite: "56.30Z",
+      status: "enriched",
+    });
+
+    const secondId = await insertProspect({
+      siren: TEST_SIREN,
+      denomination: "Le Bar Test",
+      adresse: "1 rue du Test",
+      codePostal: "75011",
+      activite: "56.30Z",
+      status: "enriched",
+    });
+
+    expect(secondId).toBe(firstId);
+  });
+
   it("inserts a dirigeant linked to a prospect", async () => {
     const prospectId = await insertProspect({
       siren: TEST_SIREN,

@@ -35,8 +35,13 @@ Réponds STRICTEMENT en JSON, sans texte autour, au format :
 {"linkedinMessage": "...", "emailSubject": "...", "emailBody": "..."}`;
 }
 
+function stripCodeFences(raw: string): string {
+  const match = raw.trim().match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  return match ? match[1] : raw;
+}
+
 function parseGeneratedMessages(raw: string): GeneratedMessages {
-  const parsed = JSON.parse(raw) as Partial<GeneratedMessages>;
+  const parsed = JSON.parse(stripCodeFences(raw)) as Partial<GeneratedMessages>;
 
   if (
     typeof parsed.linkedinMessage !== "string" ||
