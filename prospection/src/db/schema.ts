@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, unique } from "drizzle-orm/pg-core";
 
 export const prospects = pgTable("prospects", {
   id: serial("id").primaryKey(),
@@ -15,17 +15,21 @@ export const prospects = pgTable("prospects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const dirigeants = pgTable("dirigeants", {
-  id: serial("id").primaryKey(),
-  prospectId: integer("prospect_id")
-    .notNull()
-    .references(() => prospects.id),
-  nom: text("nom").notNull(),
-  prenom: text("prenom").notNull(),
-  fonction: text("fonction"),
-  linkedinUrl: text("linkedin_url"),
-  linkedinHeadline: text("linkedin_headline"),
-});
+export const dirigeants = pgTable(
+  "dirigeants",
+  {
+    id: serial("id").primaryKey(),
+    prospectId: integer("prospect_id")
+      .notNull()
+      .references(() => prospects.id),
+    nom: text("nom").notNull(),
+    prenom: text("prenom").notNull(),
+    fonction: text("fonction"),
+    linkedinUrl: text("linkedin_url"),
+    linkedinHeadline: text("linkedin_headline"),
+  },
+  (table) => [unique().on(table.prospectId, table.nom, table.prenom)]
+);
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),

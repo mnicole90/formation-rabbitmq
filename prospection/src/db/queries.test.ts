@@ -84,6 +84,39 @@ describe.skipIf(!process.env.DATABASE_URL)("queries", () => {
     expect(dirigeantId).toBeGreaterThan(0);
   });
 
+  it("is idempotent when called twice for the same dirigeant, updating fields on conflict", async () => {
+    const prospectId = await insertProspect({
+      siren: TEST_SIREN,
+      denomination: "Le Bar Test",
+      adresse: "1 rue du Test",
+      codePostal: "75011",
+      activite: "56.30Z",
+      status: "enriched",
+    });
+
+    const firstId = await insertDirigeant({
+      prospectId,
+      nom: "Dupont",
+      prenom: "Jean",
+      fonction: "Gérant",
+    });
+
+    const secondId = await insertDirigeant({
+      prospectId,
+      nom: "Dupont",
+      prenom: "Jean",
+      fonction: "Gérant",
+      linkedinUrl: "https://linkedin.com/in/jean-dupont",
+      linkedinHeadline: "Gérant chez Le Bar Test",
+    });
+
+    expect(secondId).toBe(firstId);
+
+    const [row] = await db.select().from(dirigeants).where(eq(dirigeants.id, firstId));
+    expect(row.linkedinUrl).toBe("https://linkedin.com/in/jean-dupont");
+    expect(row.linkedinHeadline).toBe("Gérant chez Le Bar Test");
+  });
+
   it("inserts a message and marks it sent", async () => {
     const prospectId = await insertProspect({
       siren: TEST_SIREN,

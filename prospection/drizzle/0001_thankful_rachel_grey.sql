@@ -1,0 +1,1 @@
+ALTER TABLE "dirigeants" ADD CONSTRAINT "dirigeants_prospect_id_nom_prenom_unique" UNIQUE("prospect_id","nom","prenom");

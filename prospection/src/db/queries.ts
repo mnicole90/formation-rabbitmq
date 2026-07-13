@@ -37,7 +37,19 @@ export async function insertProspect(data: NewProspect): Promise<number> {
 }
 
 export async function insertDirigeant(data: NewDirigeant): Promise<number> {
-  const [row] = await db.insert(dirigeants).values(data).returning({ id: dirigeants.id });
+  const [row] = await db
+    .insert(dirigeants)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [dirigeants.prospectId, dirigeants.nom, dirigeants.prenom],
+      set: {
+        fonction: data.fonction,
+        linkedinUrl: data.linkedinUrl,
+        linkedinHeadline: data.linkedinHeadline,
+      },
+    })
+    .returning({ id: dirigeants.id });
+
   return row.id;
 }
 
